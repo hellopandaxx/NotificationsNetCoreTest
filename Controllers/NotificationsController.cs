@@ -12,6 +12,8 @@
     {
         private readonly IOptions<PushoverConfiguration> config;
 
+        private const string ErrorMessageStub = "At the moment the service is not available. Please try again latter.";
+
         private HttpClient httpClient = new HttpClient();
 
         public NotificationsController(IOptions<PushoverConfiguration> config)
@@ -23,13 +25,30 @@
         [HttpPost]
         public async Task<string> Send([FromBody]string message)
         {
-            var values = new Dictionary<string, string> { { "token", this.config.Value.Token }, { "user", this.config.Value.User }, { "message", message } };
+            try
+            {
+                var values = new Dictionary<string, string> { { "token", this.config.Value.Token }, { "user", this.config.Value.User }, { "message", message } };
 
-            var content = new FormUrlEncodedContent(values);
+                var content = new FormUrlEncodedContent(values);
 
-            var response = await this.httpClient.PostAsync("https://api.pushover.net/1/messages.json", content);
+                var response = await this.httpClient.PostAsync("https://api.pushover.net/1/messages.json", content);
 
-            return await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return "ok";
+                }
+
+                // TODO:
+                // Log(response)
+                
+                return ErrorMessageStub;
+            }
+            catch
+            {
+                // TODO:
+                // Log (exception)
+                return ErrorMessageStub;
+            }
         }
     }
 }
